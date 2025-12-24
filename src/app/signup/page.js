@@ -1,17 +1,13 @@
 "use client";
-import {  useEffect } from "react";
 
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
-import { useSearchParams } from "next/navigation";
-
-
 
 export default function SignUpPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,20 +16,18 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptPolicy, setAcceptPolicy] = useState(false);
-  
+  const [refFromParams, setRefFromParams] = useState(""); // store ref from search params safely
 
-  const searchParams = useSearchParams();
-
-useEffect(() => {
-  const ref = searchParams.get("ref");
-  if (ref) {
-    setReferralCode(ref);
-  }
-}, [searchParams]);
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) {
+      setReferralCode(ref);
+      setRefFromParams(ref);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (password !== confirmPassword) {
       toast.error("Passwords do not match!");
       return;
@@ -50,7 +44,6 @@ useEffect(() => {
 
       if (response.ok) {
         toast.success("Signup successful!");
-        // Redirect to login page after signup
         router.push("/login");
       } else {
         toast.error(data.message || "Signup failed!");
@@ -65,92 +58,75 @@ useEffect(() => {
     <div className="w-full min-h-screen flex justify-center items-center bg-gray-100 dark:bg-gray-900 p-4">
       <Toaster position="top-right" />
       <div className="max-w-lg w-full bg-gray-50 dark:bg-gray-800 p-8 rounded-lg shadow-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center text-primary dark:text-white">Create Your Account</h1>
+        <h1 className="text-2xl font-bold mb-6 text-center text-primary dark:text-white">
+          Create Your Account
+        </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Full Name</label>
-            <input
-              type="text"
-              placeholder="Enter your full name"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Full Name"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-          <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Email</label>
-            <input
-              type="email"
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-          <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Phone</label>
-            <input
-              type="tel"
-              placeholder="Enter your phone number"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="tel"
+            placeholder="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+            className="w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-         <div>
-  <label className="block mb-1 font-medium text-primary dark:text-white">
-    Referral Code (optional)
-  </label>
-  <input
-    type="text"
-    placeholder="Enter referral code"
-    value={referralCode}
-    onChange={(e) => setReferralCode(e.target.value)}
-    disabled={!!searchParams.get("ref")}
-    className={`w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-      searchParams.get("ref") ? "bg-gray-100 cursor-not-allowed" : ""
-    }`}
-  />
-</div>
+          {/* Referral Code */}
+          <input
+            type="text"
+            placeholder="Referral Code (optional)"
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value)}
+            disabled={!!refFromParams}
+            className={`w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              refFromParams ? "bg-gray-100 cursor-not-allowed" : ""
+            }`}
+          />
 
-          <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Password</label>
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
-          <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Confirm Password</label>
-            <input
-              type="password"
-              placeholder="Confirm your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-3 border-[1px] rounded-[4px] text-primary dark:text-white bg-gray-50 dark:bg-gray-900 border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
+          <input
+            type="password"
+            placeholder="Confirm Password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="w-full px-4 py-3 border rounded text-primary dark:text-white bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
 
           <div className="flex items-center">
             <input
               type="checkbox"
               checked={acceptPolicy}
               onChange={(e) => setAcceptPolicy(e.target.checked)}
-              className="mr-2"
               required
+              className="mr-2"
             />
             <label className="text-sm text-primary dark:text-white">
               I accept the <span className="text-blue-500">Terms and Policy</span>
@@ -159,7 +135,7 @@ useEffect(() => {
 
           <button
             type="submit"
-            className="w-full bg-primary text-white py-3 rounded-lg font-medium hover:bg-primary/70 transition duration-300"
+            className="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary/70 transition duration-300"
           >
             Sign Up
           </button>
