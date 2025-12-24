@@ -7,6 +7,7 @@ import Link from "next/link";
 
 export default function SignUpPage() {
   const router = useRouter();
+  const NEXT_API_URL = "https://treazox1be.vercel.app/api"; // your live backend API
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,6 +15,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptPolicy, setAcceptPolicy] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,8 +25,9 @@ export default function SignUpPage() {
       return;
     }
 
+    setLoading(true);
     try {
-      const res = await fetch("http://localhost:5000/api/users/signup", {
+      const res = await fetch(`${NEXT_API_URL}/users/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fullName, email, phone, password }),
@@ -42,13 +45,14 @@ export default function SignUpPage() {
       console.error(err);
       toast.error("Something went wrong!");
     }
+    setLoading(false);
   };
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-gray-100 dark:bg-gray-900 p-4">
       <Toaster position="top-right" />
-      <div className="max-w-lg w-full bg-gray-50 dark:bg-gray-800 p-8 rounded-lg shadow-2xl">
-        <h1 className="text-2xl font-bold mb-6 text-center text-primary dark:text-white">
+      <div className="max-w-md w-full bg-white dark:bg-gray-800 p-8 rounded-xl shadow-xl">
+        <h1 className="text-3xl font-bold mb-6 text-center text-primary dark:text-white">
           Create Your Account
         </h1>
 
@@ -58,6 +62,7 @@ export default function SignUpPage() {
             placeholder="Full Name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             required
           />
           <input
@@ -65,6 +70,7 @@ export default function SignUpPage() {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             required
           />
           <input
@@ -72,6 +78,7 @@ export default function SignUpPage() {
             placeholder="Phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             required
           />
           <input
@@ -79,6 +86,7 @@ export default function SignUpPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             required
           />
           <input
@@ -86,22 +94,32 @@ export default function SignUpPage() {
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary dark:bg-gray-700 dark:text-white"
             required
           />
-          <div>
+          <div className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={acceptPolicy}
               onChange={(e) => setAcceptPolicy(e.target.checked)}
+              className="w-4 h-4 accent-primary"
               required
             />
-            <label>I accept the Terms and Policy</label>
+            <label className="text-gray-700 dark:text-gray-300">
+              I accept the <Link href="/policy" className="text-primary">Terms & Policy</Link>
+            </label>
           </div>
-          <button type="submit">Sign Up</button>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-primary text-white rounded-lg font-semibold hover:bg-primary/90 disabled:opacity-50"
+          >
+            {loading ? "Signing Up..." : "Sign Up"}
+          </button>
         </form>
 
-        <p className="mt-4 text-center">
-          Already have an account? <Link href="/login">Login</Link>
+        <p className="mt-4 text-center text-gray-600 dark:text-gray-300">
+          Already have an account? <Link href="/login" className="text-primary">Login</Link>
         </p>
       </div>
     </div>
