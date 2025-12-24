@@ -1,10 +1,20 @@
 import React from 'react'
+import LandingPage from './components/LandingPage'
+import AboutUs from './components/AboutUs'
+import InvestmentPlans from './components/InvestmentPlans'
+import LuckyDraw from './components/LuckyDraw'
+import ContactUs from './components/ContactUs'
 
 const page = () => {
   return (
-  <h1 className="text-3xl font-bold underline">
-      Hello world!
-    </h1>
+    <>
+    
+    <LandingPage/>
+    <AboutUs/>
+    <InvestmentPlans/>
+    <LuckyDraw/>
+    <ContactUs/>
+    </>
   )
 }
 

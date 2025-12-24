@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: "class",
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -7,14 +8,18 @@ module.exports = {
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
+    
     extend: {
       /* 🌈 Global Colors */
       colors: {
-        primary: "#2563eb",     // Main brand color
-        secondary: "#0f172a",   // Dark headings
+        primary: "#0F172A",     // Main brand color
+        secondary: "#475569", 
+        cardBackground:"#94A3B8",
+        cardPrice:"#10B981",
+        buttonColor:"#B57E64",  // Dark headings
         accent: "#22c55e",      // Highlights / success
         muted: "#64748b",       // Descriptions
-        background: "#f8fafc", // Page background
+        background: "#F8FAFC", // Page background
       },
 
       /* 🔤 Global Fonts */
