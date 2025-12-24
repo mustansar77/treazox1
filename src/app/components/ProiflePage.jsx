@@ -5,24 +5,43 @@ import { Copy, Sun, Moon } from "lucide-react";
 import { toast, Toaster } from "react-hot-toast";
 
 const ProfilePage = () => {
-  // Get saved theme from localStorage, default to light
+  const [mounted, setMounted] = useState(false); // check if client
   const [theme, setTheme] = useState("light");
-
   const [user] = useState({
     name: "Mustansar Hussain Tariq",
     userId: "USR12345",
-    avatar: "", // you can put image URL here
+    avatar: "",
     referralCode: "REF12345",
   });
+  const [referralLink, setReferralLink] = useState("");
 
-  const referralLink = `${window.location.origin}/signup?ref=${user.referralCode}`;
+  useEffect(() => {
+    // Now safe to use window/localStorage
+    setMounted(true);
+
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) setTheme(savedTheme);
+
+    setReferralLink(`${window.location.origin}/signup?ref=${user.referralCode}`);
+  }, [user.referralCode]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [theme, mounted]);
 
   const copyReferralLink = () => {
+    if (!mounted) return;
     navigator.clipboard.writeText(referralLink);
     toast.success("Referral link copied!");
   };
 
   const handleLogout = () => {
+    if (!mounted) return;
     localStorage.removeItem("token");
     toast.success("Logged out successfully!");
     window.location.href = "/login";
@@ -34,30 +53,15 @@ const ProfilePage = () => {
     localStorage.setItem("theme", newTheme);
   };
 
-  // Set theme on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  // Apply theme class to document
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
+  if (!mounted) return null; // prevent SSR errors
 
   return (
     <div
-      className={`min-h-screen ${theme === "dark" ? "dark" : ""} bg-gray-100 dark:bg-gray-900 p-6 transition-colors duration-300`}
+      className={`min-h-screen bg-gray-100 dark:bg-gray-900 p-6 transition-colors duration-300`}
     >
       <Toaster position="top-right" />
 
-      {/* Theme Toggle: Only visible on mobile */}
+      {/* Theme Toggle */}
       <div className="max-w-[1170px] mx-auto flex justify-end mb-4 ">
         <button
           onClick={toggleTheme}
@@ -79,19 +83,8 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      {/* Referral Card */}
       <div className="max-w-[1170px] mx-auto space-y-6">
-        {/* Premium Member Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Premium Member</h2>
-          <p className="text-gray-500 dark:text-gray-300">
-            Unlock special benefits and rewards as a premium member.
-          </p>
-          <button className="mt-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">
-            Unlock Benefits
-          </button>
-        </div>
-
-        {/* Referral Card */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Referral Program</h2>
           <p className="text-gray-500 dark:text-gray-300 mb-1">Your Referral Code</p>
@@ -114,23 +107,6 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Stats Card */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-900">
-            <p className="text-gray-500 dark:text-gray-300">Registered Members</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">125</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-900">
-            <p className="text-gray-500 dark:text-gray-300">Invested Members</p>
-            <p className="text-xl font-bold text-gray-900 dark:text-white">78</p>
-          </div>
-          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-900">
-            <p className="text-gray-500 dark:text-gray-300">Total Commission</p>
-            <p className="text-xl font-bold text-green-600">$12,450</p>
-          </div>
-        </div>
-
-        {/* Logout Button */}
         <div className="text-center md:hidden">
           <button
             onClick={handleLogout}
