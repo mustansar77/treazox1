@@ -17,39 +17,50 @@ const Allusers = () => {
     role: "user",
   });
 
-  const token = localStorage.getItem("token");
+  const [token, setToken] = useState(null);
 
-  // Fetch all users
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:5000/api/admin/users", {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setUsers(data.users);
-      } else {
-        toast.error(data.message || "Failed to fetch users");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Get token on client-side only
   useEffect(() => {
-    fetchUsers();
+    if (typeof window !== "undefined") {
+      const t = localStorage.getItem("token");
+      setToken(t);
+    }
   }, []);
+
+  // Fetch all users after token is set
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("http://localhost:5000/api/admin/users", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setUsers(data.users);
+        } else {
+          toast.error(data.message || "Failed to fetch users");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Something went wrong");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUsers();
+  }, [token]);
 
   // Delete user
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
+    if (!token) return;
 
     try {
       const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
@@ -104,6 +115,7 @@ const Allusers = () => {
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!token) return;
 
     const url = editingUser
       ? `http://localhost:5000/api/admin/users/${editingUser._id}`
@@ -122,7 +134,15 @@ const Allusers = () => {
       const data = await res.json();
       if (res.ok) {
         toast.success(editingUser ? "User updated" : "User created");
-        fetchUsers();
+        // Refresh users list
+        const updatedRes = await fetch("http://localhost:5000/api/admin/users", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const updatedData = await updatedRes.json();
+        if (updatedRes.ok) setUsers(updatedData.users);
         closeForm();
       } else {
         toast.error(data.message || "Operation failed");
