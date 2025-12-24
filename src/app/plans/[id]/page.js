@@ -8,10 +8,11 @@ export default function PlanDetail() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const planId = searchParams.get("id");
-  const price = Number(searchParams.get("price"));
-  const duration = searchParams.get("duration");
-  const dailyIncome = searchParams.get("dailyIncome");
+  // Use search params for plan details
+  const planId = searchParams.get("id") || "1";
+  const price = Number(searchParams.get("price")) || 1000;
+  const duration = searchParams.get("duration") || 30;
+  const dailyIncome = searchParams.get("dailyIncome") || 50;
 
   const [loading, setLoading] = useState(false);
   const [exchange, setExchange] = useState("binance");
@@ -37,7 +38,7 @@ export default function PlanDetail() {
 
   const isFormValid = trxId.trim() && planId && price;
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!isFormValid) {
@@ -45,40 +46,13 @@ export default function PlanDetail() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Session expired. Please login again.");
-      router.push("/login");
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const res = await fetch("http://localhost:5000/api/investments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          planId,
-          amount: price,
-          exchange,
-          trxId,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Investment failed");
-
+    // Simulate successful investment
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
       toast.success("Investment submitted successfully!");
       router.push("/dashboard");
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
+    }, 1000);
   };
 
   const currentExchange = EXCHANGE_DETAILS[exchange];
@@ -134,9 +108,7 @@ export default function PlanDetail() {
           </p>
           <p className="break-all">
             <span className="font-semibold">Address:</span>{" "}
-            <span className="text-green-500 font-mono">
-              {currentExchange.address}
-            </span>
+            <span className="text-green-500 font-mono">{currentExchange.address}</span>
           </p>
         </div>
 

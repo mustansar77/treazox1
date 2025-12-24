@@ -18,11 +18,11 @@ const Dashboard = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Please login first");
-      router.push("/login");
-      return;
-    }
+    // if (!token) {
+    //   toast.error("Please login first");
+    //   router.push("/login");
+    //   return;
+    // }
 
     // Dummy data (replace with API later)
     setDashboard({
