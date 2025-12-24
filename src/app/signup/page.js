@@ -1,33 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const [mounted, setMounted] = useState(false); // ensures client-only
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [referralCode, setReferralCode] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptPolicy, setAcceptPolicy] = useState(false);
 
-  useEffect(() => {
-    setMounted(true); // page is now mounted
-    const ref = searchParams?.get("ref");
-    if (ref) setReferralCode(ref);
-  }, [searchParams]);
-
-  if (!mounted) return null; // prevent prerendering errors
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (password !== confirmPassword) {
       toast.error("Passwords do not match!");
       return;
@@ -37,8 +27,9 @@ export default function SignUpPage() {
       const res = await fetch("http://localhost:5000/api/users/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, phone, referralCode, password }),
+        body: JSON.stringify({ fullName, email, phone, password }),
       });
+
       const data = await res.json();
 
       if (res.ok) {
@@ -84,13 +75,6 @@ export default function SignUpPage() {
             required
           />
           <input
-            type="text"
-            placeholder="Referral Code"
-            value={referralCode}
-            onChange={(e) => setReferralCode(e.target.value)}
-            disabled={!!searchParams?.get("ref")}
-          />
-          <input
             type="password"
             placeholder="Password"
             value={password}
@@ -116,7 +100,7 @@ export default function SignUpPage() {
           <button type="submit">Sign Up</button>
         </form>
 
-        <p>
+        <p className="mt-4 text-center">
           Already have an account? <Link href="/login">Login</Link>
         </p>
       </div>
