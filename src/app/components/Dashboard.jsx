@@ -57,6 +57,15 @@ const Dashboard = () => {
     );
   }
 
+  const handleDepositClick = () => {
+  // Navigate to deposit page
+  router.push("/deposit");
+};
+
+const handleWithdrawClick=()=>{
+  router.push("/withdraw");
+
+}
   return (
     <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
@@ -89,10 +98,10 @@ const Dashboard = () => {
           </div>
 
           <div className="flex w-full flex-row gap-3">
-            <button className="px-6 w-full py-3 bg-green-600 text-white rounded-lg">
+            <button  onClick={handleDepositClick} className="px-6 w-full py-3 bg-green-600 text-white rounded-lg">
               Deposit
             </button>
-            <button className="px-6 py-3 w-full bg-blue-600 text-white rounded-lg">
+            <button onClick={handleWithdrawClick} className="px-6 py-3 w-full bg-blue-600 text-white rounded-lg">
               Withdraw
             </button>
           </div>
