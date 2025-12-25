@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Toaster, toast } from "react-hot-toast";
 import Link from "next/link";
 
+
 export default function SignUpPage() {
   const router = useRouter();
-  const NEXT_API_URL = "http://localhost:5000/api/users"; // Local backend
+  const NEXT_API_URL = "https://treazoxbackend.vercel.app/api/users"; // Local backend
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
