@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
@@ -11,12 +11,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // ✅ AUTO REDIRECT IF ALREADY LOGGED IN
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+
+    if (role === "admin") {
+      router.replace("/admin");
+    } else if (role === "user") {
+      router.replace("/dashboard");
+    }
+  }, [router]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/users/login", {
+      const res = await fetch("https://treazox-be.vercel.app/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -67,7 +78,9 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Email</label>
+            <label className="block mb-1 font-medium text-primary dark:text-white">
+              Email
+            </label>
             <input
               type="email"
               placeholder="Enter your email"
@@ -79,13 +92,15 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-primary dark:text-white">Password</label>
+            <label className="block mb-1 font-medium text-primary dark:text-white">
+              Password
+            </label>
             <input
               type="password"
               placeholder="Enter your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-primary dark:text-white  border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-primary dark:text-white border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700"
               required
             />
           </div>
