@@ -22,50 +22,53 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      const res = await fetch("https://treazox-be.vercel.app/api/users/login", {
+  try {
+    const res = await fetch(
+      "http://localhost:5000/api/users/login", // <-- your live Vercel backend
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.token) {
-        toast.success("Login successful!");
-
-        // ✅ Save auth data
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.user.role);
-        localStorage.setItem("refferalCode", data.user.referralCode);
-        localStorage.setItem(
-          "walletInfo",
-          JSON.stringify(data.user.walletInfo)
-        );
-
-        // 🔔 Notify navbar immediately
-        window.dispatchEvent(new Event("auth-change"));
-
-        // ✅ Role-based redirect
-        if (data.user.role === "admin") {
-          router.push("/admin");
-        } else {
-          router.push("/dashboard");
-        }
-      } else {
-        toast.error(data.message || "Login failed!");
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong!");
-    } finally {
-      setLoading(false);
+    );
+
+    const data = await res.json();
+
+    if (res.ok && data.token) {
+      toast.success("Login successful!");
+
+      // ✅ Save auth data
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("role", data.user.role);
+      localStorage.setItem("refferalCode", data.user.referralCode);
+      localStorage.setItem(
+        "walletInfo",
+        JSON.stringify(data.user.walletInfo)
+      );
+
+      // 🔔 Notify navbar immediately
+      window.dispatchEvent(new Event("auth-change"));
+
+      // ✅ Role-based redirect
+      if (data.user.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
+    } else {
+      toast.error(data.message || "Login failed!");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error("Something went wrong!");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-gray-100 dark:bg-gray-900 p-4">
