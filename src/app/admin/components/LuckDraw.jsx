@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 const LuckDraw = () => {
   const [luckyDraws, setLuckyDraws] = useState([]);
@@ -15,11 +16,43 @@ const LuckDraw = () => {
     winner: "",
   });
 
+  const token = Cookies.get("token");
+
+  // ==========================
+  // Fetch all Lucky Draws
+  // ==========================
+  const fetchLuckyDraws = async () => {
+    try {
+      const res = await fetch("/api/admin/luckydraws", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (res.ok) setLuckyDraws(data.draws || []);
+      else toast.error(data.message || "Failed to fetch lucky draws");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching lucky draws");
+    }
+  };
+
+  // Fetch on mount
+  useEffect(() => {
+    fetchLuckyDraws();
+  }, []);
+
+  // ==========================
+  // Handle input change
+  // ==========================
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = () => {
+  // ==========================
+  // Create / Update Lucky Draw
+  // ==========================
+  const handleSubmit = async () => {
     const { buyPrice, winningPrice, participants } = formData;
 
     if (!buyPrice || !winningPrice || !participants) {
@@ -27,32 +60,83 @@ const LuckDraw = () => {
       return;
     }
 
-    if (editIndex !== null) {
-      const updated = [...luckyDraws];
-      updated[editIndex] = formData;
-      setLuckyDraws(updated);
-      toast.success("Lucky Draw updated");
-    } else {
-      setLuckyDraws([...luckyDraws, formData]);
-      toast.success("Lucky Draw created");
-    }
+    try {
+      const method = editIndex !== null ? "PUT" : "POST";
+      const body = editIndex !== null
+        ? JSON.stringify({ id: luckyDraws[editIndex]._id, buyPrice, winningPrice, participantsLimit: participants })
+        : JSON.stringify({ buyPrice, winningPrice, participantsLimit: participants, winnersCount: 1, endDate: new Date(Date.now() + 5*24*60*60*1000) });
 
-    resetForm();
+      const res = await fetch("/api/admin/luckydraws", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(editIndex !== null ? "Lucky Draw updated" : "Lucky Draw created");
+        fetchLuckyDraws();
+        resetForm();
+      } else {
+        toast.error(data.message || "Operation failed");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
+    }
   };
 
+  // ==========================
+  // Edit Lucky Draw
+  // ==========================
   const handleEdit = (index) => {
-    setFormData(luckyDraws[index]);
+    const draw = luckyDraws[index];
+    setFormData({
+      buyPrice: draw.buyPrice,
+      winningPrice: draw.winningPrice,
+      participants: draw.participantsLimit,
+      winner: draw.winnersCount,
+    });
     setEditIndex(index);
     setShowModal(true);
   };
 
-  const handleDelete = (index) => {
-    if (confirm("Are you sure you want to delete this lucky draw?")) {
-      setLuckyDraws(luckyDraws.filter((_, i) => i !== index));
-      toast.success("Lucky Draw deleted");
+  // ==========================
+  // Delete Lucky Draw
+  // ==========================
+  const handleDelete = async (index) => {
+    if (!confirm("Are you sure you want to delete this lucky draw?")) return;
+
+    try {
+      const id = luckyDraws[index]._id;
+      const res = await fetch("/api/admin/luckydraws", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Lucky Draw deleted");
+        fetchLuckyDraws();
+      } else {
+        toast.error(data.message || "Failed to delete lucky draw");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting lucky draw");
     }
   };
 
+  // ==========================
+  // Reset Form
+  // ==========================
   const resetForm = () => {
     setFormData({
       buyPrice: "",
@@ -64,6 +148,9 @@ const LuckDraw = () => {
     setShowModal(false);
   };
 
+  // ==========================
+  // Render JSX (No changes)
+  // ==========================
   return (
     <div className=" sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
@@ -124,10 +211,10 @@ const LuckDraw = () => {
                     {item.winningPrice}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {item.participants}
+                    {item.participantsLimit}
                   </td>
                   <td className="px-6 py-4 text-sm">
-                    {item.winner || "Not Selected"}
+                    {item.winnersCount || "Not Selected"}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-row gap-2 justify-center">
