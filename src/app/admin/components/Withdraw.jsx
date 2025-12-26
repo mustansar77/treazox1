@@ -1,26 +1,71 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import Cookies from "js-cookie"; // to read token from cookies
 
 const Withdraw = () => {
-  const [withdraws, setWithdraws] = useState([
-    { id: 1, email: "user1@gmail.com", address: "0xA1B2C3D4", amount: 150, status: "processing" },
-    { id: 2, email: "user2@gmail.com", address: "0xF9E8D7C6", amount: 300, status: "completed" },
-    { id: 3, email: "user3@gmail.com", address: "bc1qxyz123", amount: 500, status: "processing" },
-  ]);
-
+  const [withdraws, setWithdraws] = useState([]);
   const [searchEmail, setSearchEmail] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const handleStatusChange = (id, newStatus) => {
-    setWithdraws((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, status: newStatus } : w))
-    );
-    toast.success(`Withdraw marked as ${newStatus}`);
+  const fetchWithdraws = async () => {
+    try {
+      const token = Cookies.get("token"); // read token from cookies
+      if (!token) throw new Error("Unauthorized: Please login first");
+
+      const res = await fetch("/api/withdraws", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to fetch withdraws");
+
+      setWithdraws(data.withdraws);
+    } catch (err) {
+      console.error("Fetch withdraws error:", err);
+      toast.error(err.message || "Failed to fetch withdraws");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleStatusChange = async (id, newStatus) => {
+    try {
+      const token = Cookies.get("token");
+      if (!token) throw new Error("Unauthorized");
+
+      const res = await fetch("/api/withdraws", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to update status");
+
+      setWithdraws((prev) =>
+        prev.map((w) => (w._id === id ? { ...w, status: newStatus } : w))
+      );
+
+      toast.success(`Withdraw marked as ${newStatus}`);
+    } catch (err) {
+      console.error("Update status error:", err);
+      toast.error(err.message || "Failed to update status");
+    }
+  };
+
+  useEffect(() => {
+    fetchWithdraws();
+  }, []);
+
   const filteredWithdraws = withdraws.filter((w) =>
-    w.email.toLowerCase().includes(searchEmail.toLowerCase())
+    w.user?.email.toLowerCase().includes(searchEmail.toLowerCase())
   );
 
   return (
@@ -48,6 +93,9 @@ const Withdraw = () => {
             <tr>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">#</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">User Email</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Exchange</th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Network Type</th>
+
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Withdraw Address</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Amount</th>
               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Status</th>
@@ -56,7 +104,13 @@ const Withdraw = () => {
           </thead>
 
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {filteredWithdraws.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="text-center py-4 text-gray-500 dark:text-gray-300">
+                  Loading withdraws...
+                </td>
+              </tr>
+            ) : filteredWithdraws.length === 0 ? (
               <tr>
                 <td colSpan={6} className="text-center py-4 text-gray-500 dark:text-gray-300">
                   No withdraw requests found
@@ -64,14 +118,19 @@ const Withdraw = () => {
               </tr>
             ) : (
               filteredWithdraws.map((item, index) => (
-                <tr key={item.id}>
+                <tr key={item._id}>
                   <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">{index + 1}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">{item.email}</td>
+                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">{item.user?.email}</td>
+                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.exchange}</td>
+                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.network}</td>
+
                   <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.address}</td>
                   <td className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-100">${item.amount}</td>
                   <td className="px-4 py-2 text-sm">
                     <span className={`px-3 py-1 rounded-[5px] text-xs font-medium ${
-                      item.status === "completed" ? "bg-green-800 text-white" : "bg-yellow-400 text-black"
+                      item.status === "completed" ? "bg-green-800 text-white" :
+                      item.status === "processing" ? "bg-yellow-400 text-black" :
+                      "bg-gray-400 text-white"
                     }`}>
                       {item.status}
                     </span>
@@ -79,9 +138,10 @@ const Withdraw = () => {
                   <td className="px-4 py-2 text-center">
                     <select
                       value={item.status}
-                      onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                      onChange={(e) => handleStatusChange(item._id, e.target.value)}
                       className="px-3 py-1 border rounded-md bg-white dark:bg-gray-700 dark:text-white focus:outline-none"
                     >
+                      <option value="pending">Pending</option>
                       <option value="processing">Processing</option>
                       <option value="completed">Completed</option>
                     </select>

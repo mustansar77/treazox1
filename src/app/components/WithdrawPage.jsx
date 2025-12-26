@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
+import Cookies from "js-cookie"; // <-- import js-cookie
 
 const WithdrawPage = () => {
   const WITHDRAW_OPTIONS = [10, 20, 30, 40, 50];
@@ -14,17 +15,16 @@ const WithdrawPage = () => {
   const [availableBalance, setAvailableBalance] = useState(0);
   const [selectedAmount, setSelectedAmount] = useState("");
   const [customAmount, setCustomAmount] = useState("");
-  const [selectedExchange, setSelectedExchange] = useState({ name: "", networks: [], address: "" });
+  const [selectedExchange, setSelectedExchange] = useState({ name: "", networks: [] });
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
 
   useEffect(() => {
-    // Replace with API call if needed
     const balance = localStorage.getItem("availableBalance") || 1000;
     setAvailableBalance(Number(balance));
   }, []);
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     const finalAmount = selectedAmount || customAmount;
     if (!finalAmount || !selectedExchange.name || !selectedNetwork || !address) {
       toast.error("Please fill all fields");
@@ -35,15 +35,44 @@ const WithdrawPage = () => {
       return;
     }
 
-    // Trigger withdraw API here
-    toast.success(`Withdraw request submitted: $${finalAmount} to ${selectedExchange.name}`);
+    try {
+      // Get token from cookies
+      const token = Cookies.get("token"); // <-- from cookie
+      if (!token) {
+        toast.error("Unauthorized: Please login first");
+        return;
+      }
 
-    setAvailableBalance((prev) => prev - Number(finalAmount));
-    setSelectedAmount("");
-    setCustomAmount("");
-    setSelectedExchange({ name: "", networks: [], address: "" });
-    setSelectedNetwork("");
-    setAddress("");
+      const res = await fetch("/api/withdraws", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // <-- send in header
+        },
+        body: JSON.stringify({
+          amount: finalAmount,
+          exchange: selectedExchange.name,
+          network: selectedNetwork,
+          address,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.message || "Something went wrong");
+
+      toast.success(data.message);
+
+      setAvailableBalance((prev) => prev - Number(finalAmount));
+      setSelectedAmount("");
+      setCustomAmount("");
+      setSelectedExchange({ name: "", networks: [] });
+      setSelectedNetwork("");
+      setAddress("");
+    } catch (err) {
+      console.error("Withdraw error:", err);
+      toast.error(err.message || "Withdraw failed");
+    }
   };
 
   return (
