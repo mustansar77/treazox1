@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 const Allusers = () => {
   const [users, setUsers] = useState([]);
@@ -16,16 +17,26 @@ const Allusers = () => {
     role: "user",
   });
 
-  const token = localStorage.getItem("token"); // admin token
+  // 🔹 Get token and role from cookies
+  const token = Cookies.get("token");
+  const role = Cookies.get("role");
+
+  if (!token) {
+    toast.error("Admin not authenticated");
+  }
 
   // Fetch all users
   const fetchUsers = async () => {
-    if (!token) return toast.error("Admin not logged in");
+    if (!token) return;
     try {
       const res = await fetch("/api/admin/users", {
         method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // send token as Bearer
+        },
       });
+
       const data = await res.json();
       if (res.ok) setUsers(data.users || []);
       else toast.error(data.message || "Failed to fetch users");
@@ -36,25 +47,29 @@ const Allusers = () => {
   };
 
   useEffect(() => {
+    if (!role) return toast.error("Admin not logged in");
     fetchUsers();
-  }, []);
+  }, [role, token]);
 
   // Delete user
   const handleDelete = async (id) => {
+    if (!token) return;
     if (!confirm("Are you sure you want to delete this user?")) return;
+
     try {
       const res = await fetch("/api/admin/users", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // send token
         },
         body: JSON.stringify({ id }),
       });
+
       const data = await res.json();
       if (res.ok) {
         toast.success("User deleted");
-        fetchUsers(); // refresh after delete
+        fetchUsers(); // refresh
       } else toast.error(data.message || "Failed to delete user");
     } catch (err) {
       console.error(err);
@@ -94,40 +109,29 @@ const Allusers = () => {
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      if (!token) return toast.error("Admin not logged in");
+    if (!token) return;
 
-      if (editingUser) {
-        // Update user
-        const res = await fetch("/api/admin/users", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ id: editingUser._id, ...formData }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          toast.success("User updated");
-          fetchUsers(); // refresh after update
-        } else toast.error(data.message || "Failed to update user");
-      } else {
-        // Create new user
-        const res = await fetch("/api/admin/users", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          toast.success("User created");
-          fetchUsers(); // refresh after create
-        } else toast.error(data.message || "Failed to create user");
-      }
+    try {
+      const method = editingUser ? "PUT" : "POST";
+      const body = editingUser
+        ? JSON.stringify({ id: editingUser._id, ...formData })
+        : JSON.stringify(formData);
+
+      const res = await fetch("/api/admin/users", {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // send token
+        },
+        body,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(editingUser ? "User updated" : "User created");
+        fetchUsers();
+      } else toast.error(data.message || "Operation failed");
+
       closeForm();
     } catch (err) {
       console.error(err);
@@ -140,7 +144,7 @@ const Allusers = () => {
   );
 
   return (
-    <div className=" sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div className="sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">

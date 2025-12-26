@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
+import Cookies from "js-cookie"; // client-side cookie
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
-  // 🔹 AUTO REDIRECT IF ALREADY LOGGED IN
-  useEffect(() => {
-    const role = localStorage.getItem("role");
-    if (role === "admin") router.replace("/admin");
-    if (role === "user") router.replace("/dashboard");
-  }, [router]);
 
   // 🔹 HANDLE LOGIN
   const handleSubmit = async (e) => {
@@ -34,17 +28,14 @@ export default function LoginPage() {
 
       if (res.ok && data.token) {
         toast.success("Login successful!");
+console.log(data)
+        // ✅ Store role in cookie (JS-accessible) for redirection
+        Cookies.set("role", data.user.role, { expires: 30 }); // 1 day
+        Cookies.set("token", data.token, { expires: 30 }); // 1 day
 
-        // ✅ Save token & user info in localStorage immediately
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.user.role);
-        localStorage.setItem("referralCode", data.user.referralCode || "");
-        localStorage.setItem("walletInfo", JSON.stringify(data.user.walletInfo || 0));
 
-        // 🔔 Trigger navbar auth event
-        window.dispatchEvent(new Event("auth-change"));
-
-        // ✅ Directly redirect based on role
+        // 🔔 Server will set httpOnly token cookie in response
+        // Redirect based on role
         if (data.user.role === "admin") router.push("/admin");
         else router.push("/dashboard");
       } else {
