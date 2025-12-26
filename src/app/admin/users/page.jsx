@@ -18,7 +18,7 @@ const Page = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:5000/api/admin/user-stats", {
+        const res = await fetch("", {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,

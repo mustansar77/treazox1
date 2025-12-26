@@ -1,35 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { toast, Toaster } from "react-hot-toast";
 
 const Allusers = () => {
-  const [users, setUsers] = useState([
-    {
-      _id: "1",
-      fullName: "Mustansar Hussain Tariq",
-      email: "mustansar@example.com",
-      phone: "1234567890",
-      role: "admin",
-      active: true,
-    },
-    {
-      _id: "2",
-      fullName: "John Doe",
-      email: "john@example.com",
-      phone: "9876543210",
-      role: "user",
-      active: true,
-    },
-    {
-      _id: "3",
-      fullName: "Jane Smith",
-      email: "jane@example.com",
-      phone: "5555555555",
-      role: "user",
-      active: false,
-    },
-  ]);
+  const [users, setUsers] = useState([]);
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -41,11 +16,50 @@ const Allusers = () => {
     role: "user",
   });
 
+  const token = localStorage.getItem("token"); // admin token
+
+  // Fetch all users
+  const fetchUsers = async () => {
+    if (!token) return toast.error("Admin not logged in");
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (res.ok) setUsers(data.users || []);
+      else toast.error(data.message || "Failed to fetch users");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong while fetching users");
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   // Delete user
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
-    setUsers(users.filter((u) => u._id !== id));
-    toast.success("User deleted");
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("User deleted");
+        fetchUsers(); // refresh after delete
+      } else toast.error(data.message || "Failed to delete user");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error deleting user");
+    }
   };
 
   // Open form
@@ -78,25 +92,47 @@ const Allusers = () => {
   };
 
   // Submit form
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingUser) {
-      // Update user
-      setUsers(
-        users.map((u) =>
-          u._id === editingUser._id ? { ...u, ...formData } : u
-        )
-      );
-      toast.success("User updated");
-    } else {
-      // Create new user
-      setUsers([
-        ...users,
-        { _id: Date.now().toString(), ...formData, active: true },
-      ]);
-      toast.success("User created");
+    try {
+      if (!token) return toast.error("Admin not logged in");
+
+      if (editingUser) {
+        // Update user
+        const res = await fetch("/api/admin/users", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ id: editingUser._id, ...formData }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success("User updated");
+          fetchUsers(); // refresh after update
+        } else toast.error(data.message || "Failed to update user");
+      } else {
+        // Create new user
+        const res = await fetch("/api/admin/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          toast.success("User created");
+          fetchUsers(); // refresh after create
+        } else toast.error(data.message || "Failed to create user");
+      }
+      closeForm();
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong");
     }
-    closeForm();
   };
 
   const filteredUsers = users.filter((u) =>
