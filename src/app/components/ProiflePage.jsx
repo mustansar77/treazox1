@@ -43,6 +43,8 @@ const ProfilePage = () => {
   const handleLogout = () => {
     if (!mounted) return;
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+
     toast.success("Logged out successfully!");
     window.location.href = "/login";
   };
