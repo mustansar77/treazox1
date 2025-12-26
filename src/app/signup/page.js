@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export default function SignUpPage() {
   const router = useRouter();
-  const NEXT_API_URL = "https://treazoxbackend.vercel.app/api/users"; // Local backend
+  const NEXT_API_URL = "/api/users/signup"; // Local backend
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -19,36 +19,37 @@ export default function SignUpPage() {
   const [acceptPolicy, setAcceptPolicy] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+ const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match!");
-      return;
-    }
+  if (password !== confirmPassword) {
+    toast.error("Passwords do not match!");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      const res = await fetch(`${NEXT_API_URL}/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, email, phone, password, referralCode }),
-      });
+  setLoading(true);
+  try {
+   const res = await fetch("/api/users/signup", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ fullName, email, phone, password, referralCode }),
+});
 
-      const data = await res.json();
+const data = await res.json();
 
-      if (res.ok) {
-        toast.success("Signup successful!");
-        router.push("/login");
-      } else {
-        toast.error(data.message || "Signup failed!");
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Something went wrong!");
-    }
+if (res.ok) {
+  toast.success("Signup successful!");
+  router.push("/login");
+} else {
+  toast.error(data.message || "Signup failed!");
+}
+  } catch (err) {
+    console.error("Signup error:", err);
+    toast.error("Something went wrong! Please try again.");
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-gray-100 dark:bg-gray-900 p-4">

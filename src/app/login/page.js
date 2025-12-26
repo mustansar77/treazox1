@@ -11,69 +11,56 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // ✅ AUTO REDIRECT IF ALREADY LOGGED IN
+  // 🔹 AUTO REDIRECT IF ALREADY LOGGED IN
   useEffect(() => {
     const role = localStorage.getItem("role");
-
-    if (role === "admin") {
-      router.replace("/admin");
-    } else if (role === "user") {
-      router.replace("/dashboard");
-    }
+    if (role === "admin") router.replace("/admin");
+    if (role === "user") router.replace("/dashboard");
   }, [router]);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
+  // 🔹 HANDLE LOGIN
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
 
-  try {
-    const res = await fetch(
-      "http://localhost:5000/api/users/login", // <-- your live Vercel backend
-      {
+    try {
+      const res = await fetch("/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
-      }
-    );
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok && data.token) {
-      toast.success("Login successful!");
+      if (res.ok && data.token) {
+        toast.success("Login successful!");
 
-      // ✅ Save auth data
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.user.role);
-      localStorage.setItem("refferalCode", data.user.referralCode);
-      localStorage.setItem(
-        "walletInfo",
-        JSON.stringify(data.user.walletInfo)
-      );
+        // ✅ Save token & user info in localStorage immediately
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("role", data.user.role);
+        localStorage.setItem("referralCode", data.user.referralCode || "");
+        localStorage.setItem("walletInfo", JSON.stringify(data.user.walletInfo || 0));
 
-      // 🔔 Notify navbar immediately
-      window.dispatchEvent(new Event("auth-change"));
+        // 🔔 Trigger navbar auth event
+        window.dispatchEvent(new Event("auth-change"));
 
-      // ✅ Role-based redirect
-      if (data.user.role === "admin") {
-        router.push("/admin");
+        // ✅ Directly redirect based on role
+        if (data.user.role === "admin") router.push("/admin");
+        else router.push("/dashboard");
       } else {
-        router.push("/dashboard");
+        toast.error(data.message || "Login failed!");
       }
-    } else {
-      toast.error(data.message || "Login failed!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong!");
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-    toast.error("Something went wrong!");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="w-full min-h-screen flex justify-center items-center bg-gray-100 dark:bg-gray-900 p-4">
       <Toaster position="top-right" />
-
       <div className="max-w-md w-full bg-gray-50 dark:bg-gray-800 p-8 rounded-lg shadow-2xl">
         <h1 className="text-2xl font-bold mb-6 text-center text-primary dark:text-white">
           Login to Your Account
@@ -89,7 +76,7 @@ const handleSubmit = async (e) => {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 bg-gray-50 dark:bg-gray-900 text-primary dark:text-white py-3 border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700"
+              className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900 text-primary dark:text-white border border-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-700"
               required
             />
           </div>
