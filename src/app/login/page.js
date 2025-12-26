@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast, Toaster } from "react-hot-toast";
-import Cookies from "js-cookie"; // client-side cookie
+import Cookies from "js-cookie";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +12,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // 🔹 HANDLE LOGIN
+  // Detect if production (Vercel)
+  const isProd = process.env.NODE_ENV === "production";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -28,13 +30,23 @@ export default function LoginPage() {
 
       if (res.ok && data.token) {
         toast.success("Login successful!");
-console.log(data)
-        // ✅ Store role in cookie (JS-accessible) for redirection
-        Cookies.set("role", data.user.role, { expires: 30 }); // 1 day
-        Cookies.set("token", data.token, { expires: 30 }); // 1 day
+        console.log(data);
 
+        // ✅ Set cookies with proper options for Vercel/production
+        Cookies.set("token", data.token, {
+          expires: 30,
+          secure: isProd,
+          sameSite: "strict",
+          path: "/",
+        });
 
-        // 🔔 Server will set httpOnly token cookie in response
+        Cookies.set("role", data.user.role, {
+          expires: 30,
+          secure: isProd,
+          sameSite: "strict",
+          path: "/",
+        });
+
         // Redirect based on role
         if (data.user.role === "admin") router.push("/admin");
         else router.push("/dashboard");
@@ -99,7 +111,10 @@ console.log(data)
 
         <p className="text-center text-sm mt-4 text-primary dark:text-white">
           Don't have an account?{" "}
-          <Link href="/signup" className="text-primary dark:text-white font-medium">
+          <Link
+            href="/signup"
+            className="text-primary dark:text-white font-medium"
+          >
             Sign Up
           </Link>
         </p>
