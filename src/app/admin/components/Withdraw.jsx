@@ -4,21 +4,20 @@ import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
 import Cookies from "js-cookie";
 
-const Withdraw = () => {
+const WithdrawAdminPage = () => {
   const [withdraws, setWithdraws] = useState([]);
   const [searchEmail, setSearchEmail] = useState("");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("pending"); // pending | processing | completed
+  const [activeTab, setActiveTab] = useState("pending"); // pending | processing | completed | rejected
 
   const fetchWithdraws = async () => {
     try {
       const token = Cookies.get("token");
-      if (!token) throw new Error("Unauthorized: Please login first");
+      if (!token) throw new Error("Unauthorized");
 
       const res = await fetch("/api/withdraws", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to fetch withdraws");
 
@@ -38,13 +37,9 @@ const Withdraw = () => {
 
       const res = await fetch("/api/withdraws", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, status: newStatus }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to update status");
 
@@ -72,25 +67,18 @@ const Withdraw = () => {
   return (
     <div className="p-4 sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
+      <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">Withdraw Requests</h1>
 
-      <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
-        Withdraw Requests
-      </h1>
+      <input
+        type="text"
+        placeholder="Search by email..."
+        value={searchEmail}
+        onChange={(e) => setSearchEmail(e.target.value)}
+        className="w-full sm:w-1/3 px-4 py-2 border rounded-md mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
+      />
 
-      {/* Search */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by email..."
-          value={searchEmail}
-          onChange={(e) => setSearchEmail(e.target.value)}
-          className="w-full sm:w-1/3 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-white"
-        />
-      </div>
-
-      {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
-        {["pending", "processing", "completed"].map((status) => (
+        {["pending", "processing", "completed", "rejected"].map((status) => (
           <button
             key={status}
             onClick={() => setActiveTab(status)}
@@ -105,7 +93,6 @@ const Withdraw = () => {
         ))}
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
         <table className="min-w-[1100px] w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
@@ -141,12 +128,8 @@ const Withdraw = () => {
                   <td className="px-4 py-2 text-sm">{item.user?.email}</td>
                   <td className="px-4 py-2 text-sm">{item.exchange}</td>
                   <td className="px-4 py-2 text-sm">{item.network}</td>
-                  <td className="px-4 py-2 text-sm max-w-[220px] truncate font-mono">
-                    {item.address}
-                  </td>
-                  <td className="px-4 py-2 text-sm font-semibold">
-                    ${item.netAmount}
-                  </td>
+                  <td className="px-4 py-2 text-sm max-w-[220px] truncate font-mono">{item.address}</td>
+                  <td className="px-4 py-2 text-sm font-semibold">${item.netAmount}</td>
                   <td className="px-4 py-2 text-sm">
                     <span
                       className={`px-3 py-1 rounded text-xs font-medium ${
@@ -154,6 +137,8 @@ const Withdraw = () => {
                           ? "bg-green-800 text-white"
                           : item.status === "processing"
                           ? "bg-yellow-400 text-black"
+                          : item.status === "rejected"
+                          ? "bg-red-600 text-white"
                           : "bg-gray-400 text-white"
                       }`}
                     >
@@ -163,15 +148,14 @@ const Withdraw = () => {
                   <td className="px-4 py-2 text-center">
                     <select
                       value={item.status}
-                      onChange={(e) =>
-                        handleStatusChange(item._id, e.target.value)
-                      }
+                      onChange={(e) => handleStatusChange(item._id, e.target.value)}
                       className="px-3 py-1 border rounded-md bg-white dark:bg-gray-700 dark:text-white"
                       disabled={item.status === "completed"}
                     >
                       <option value="pending">Pending</option>
                       <option value="processing">Processing</option>
                       <option value="completed">Completed</option>
+                      <option value="rejected">Rejected</option>
                     </select>
                   </td>
                 </tr>
@@ -184,4 +168,4 @@ const Withdraw = () => {
   );
 };
 
-export default Withdraw;
+export default WithdrawAdminPage;

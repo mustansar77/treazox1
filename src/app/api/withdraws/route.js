@@ -2,14 +2,14 @@ import connectDB from "../../../lib/db";
 import Withdraw from "../../../models/Withdraw";
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 
 const SECRET = process.env.JWT_SECRET || "secret";
 
-// Middleware to verify user
+// ------------------ Verify User ------------------
 async function verifyUser(req) {
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Unauthorized: Token missing");
+  if (!authHeader || !authHeader.startsWith("Bearer "))
+    throw new Error("Unauthorized: Token missing");
 
   const token = authHeader.split(" ")[1];
   const decoded = jwt.verify(token, SECRET);
@@ -17,19 +17,21 @@ async function verifyUser(req) {
   return decoded;
 }
 
-// Middleware to verify admin
+// ------------------ Verify Admin ------------------
 async function verifyAdmin(req) {
   const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) throw new Error("Unauthorized: Token missing");
+  if (!authHeader || !authHeader.startsWith("Bearer "))
+    throw new Error("Unauthorized: Token missing");
 
   const token = authHeader.split(" ")[1];
   const decoded = jwt.verify(token, SECRET);
-  if (!decoded.id || decoded.role !== "admin") throw new Error("Unauthorized: Not admin");
+  if (!decoded.id || decoded.role !== "admin")
+    throw new Error("Unauthorized: Not admin");
   return decoded;
 }
 
 // ======================
-// POST create withdraw (user)
+// POST: create withdraw (user)
 // ======================
 export async function POST(req) {
   try {
@@ -38,27 +40,15 @@ export async function POST(req) {
 
     const { amount, exchange, network, address } = await req.json();
     if (!amount || !exchange || !network || !address) {
-      return NextResponse.json(
-        { message: "All fields required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "All fields required" }, { status: 400 });
     }
 
-    const withdrawAmount = Number(amount);
-    if (withdrawAmount <= 0) {
-      return NextResponse.json(
-        { message: "Invalid withdraw amount" },
-        { status: 400 }
-      );
-    }
-
-    // 🔥 10% withdraw fee
-    const fee = Number(((withdrawAmount * 10) / 100).toFixed(2));
-    const netAmount = Number((withdrawAmount - fee).toFixed(2));
+    const fee = Number(((amount * 10) / 100).toFixed(2));
+    const netAmount = Number((amount - fee).toFixed(2));
 
     const newWithdraw = await Withdraw.create({
       user: user.id,
-      amount: withdrawAmount,
+      amount,
       fee,
       netAmount,
       exchange,
@@ -67,56 +57,47 @@ export async function POST(req) {
       status: "pending",
     });
 
+    const populatedWithdraw = await Withdraw.findById(newWithdraw._id).populate(
+      "user",
+      "fullName email"
+    );
+
     return NextResponse.json({
       message: "Withdraw request submitted",
-      withdraw: newWithdraw,
+      withdraw: populatedWithdraw,
     });
   } catch (err) {
     console.error("POST /withdraws error:", err);
-    return NextResponse.json(
-      { message: err.message || "Error creating withdraw" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: err.message || "Error creating withdraw" }, { status: 500 });
   }
 }
 
-
 // ======================
-// GET all withdraws (admin)
+// GET: all withdraws (admin)
 // ======================
 export async function GET(req) {
   try {
     await connectDB();
     await verifyAdmin(req);
 
-    const withdraws = await Withdraw.find()
-      .populate("user", "fullName email")
-      .sort({ createdAt: -1 })
-      .lean();
+    const withdraws = await Withdraw.find().populate("user", "fullName email").sort({ createdAt: -1 });
 
-    const normalized = withdraws.map((w) => {
-      if (w.netAmount !== undefined) return w;
-
-      // backward compatibility (old data)
-      const fee = Number(((w.amount * 10) / 100).toFixed(2));
-      return {
-        ...w,
-        fee,
-        netAmount: Number((w.amount - fee).toFixed(2)),
-      };
+    // Add fee/netAmount dynamically if missing (old withdraws)
+    const enriched = withdraws.map((w) => {
+      const fee = w.fee ?? Number(((w.amount * 10) / 100).toFixed(2));
+      const netAmount = w.netAmount ?? Number((w.amount - fee).toFixed(2));
+      return { ...w._doc, fee, netAmount };
     });
 
-    return NextResponse.json({ withdraws: normalized });
+    return NextResponse.json({ withdraws: enriched });
   } catch (err) {
-    return NextResponse.json(
-      { message: err.message || "Error fetching withdraws" },
-      { status: 500 }
-    );
+    console.error("GET /withdraws error:", err);
+    return NextResponse.json({ message: err.message || "Error fetching withdraws" }, { status: 500 });
   }
 }
 
 // ======================
-// PUT update withdraw status (admin)
+// PUT: update withdraw status (admin)
 // ======================
 export async function PUT(req) {
   try {
@@ -124,7 +105,9 @@ export async function PUT(req) {
     await verifyAdmin(req);
 
     const { id, status } = await req.json();
-    if (!id || !status) return NextResponse.json({ message: "Id and status required" }, { status: 400 });
+    if (!id || !status)
+      return NextResponse.json({ message: "Id and status required" }, { status: 400 });
+
     if (!["pending", "processing", "completed", "rejected"].includes(status))
       return NextResponse.json({ message: "Invalid status" }, { status: 400 });
 
@@ -142,7 +125,7 @@ export async function PUT(req) {
 }
 
 // ======================
-// DELETE withdraw (admin)
+// DELETE: withdraw (admin)
 // ======================
 export async function DELETE(req) {
   try {
