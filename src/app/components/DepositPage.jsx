@@ -73,7 +73,8 @@ const DepositPage = () => {
     <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-4 sm:p-6">
       <Toaster position="top-right" />
 
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
+      <div className="max-w-[1170px] mx-auto ">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
         Deposit Funds
       </h1>
 
@@ -183,6 +184,7 @@ const DepositPage = () => {
       >
         Confirm Deposit
       </button>
+      </div>
     </div>
   );
 };

@@ -76,7 +76,6 @@ export async function POST(req) {
   }
 }
 
-
 // ======================
 // GET: all deposits (admin only)
 // ======================
@@ -124,7 +123,13 @@ export async function PUT(req) {
     const deposit = await Deposit.findById(id);
     if (!deposit) return NextResponse.json({ message: "Deposit not found" }, { status: 404 });
 
+    // Update status
     deposit.status = status;
+
+    // ✅ Ensure required fields exist to prevent validation error
+    if (deposit.fee === undefined) deposit.fee = Number(((deposit.amount * 5) / 100).toFixed(2));
+    if (deposit.totalAmount === undefined) deposit.totalAmount = Number((deposit.amount + deposit.fee).toFixed(2));
+
     await deposit.save();
 
     return NextResponse.json({ message: `Deposit ${status}`, deposit });

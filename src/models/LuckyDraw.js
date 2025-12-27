@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 
 const LuckyDrawSchema = new mongoose.Schema(
   {
-    buyPrice: { type: Number, required: true }, // Price to join
-    winningPrice: { type: Number, required: true }, // Total prize
-    participantsLimit: { type: Number, required: true }, // Max participants
-    winnersCount: { type: Number, required: true }, // Number of winners
+    buyPrice: { type: Number, required: true },
+    winningPrice: { type: Number, required: true },
+    participantsLimit: { type: Number, required: true },
+    winnersCount: { type: Number, required: true },
     participants: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
@@ -15,12 +15,34 @@ const LuckyDrawSchema = new mongoose.Schema(
     winners: [
       {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        wonAt: { type: Date, default: Date.now },
       },
     ],
     startDate: { type: Date, default: Date.now },
-    endDate: { type: Date, required: true }, // 4-5 days from start
+    endDate: { type: Date, required: true },
+    isCompleted: { type: Boolean, default: false }, // prevent multiple winner selection
   },
   { timestamps: true }
 );
 
-export default mongoose.models.LuckyDraw || mongoose.model("LuckyDraw", LuckyDrawSchema);
+// ---------------------
+// Helper function to select winners
+// ---------------------
+export async function selectWinners(draw) {
+  if (!draw || draw.isCompleted || draw.participants.length === 0) return null;
+
+  // Shuffle participants randomly
+  const shuffled = [...draw.participants].sort(() => 0.5 - Math.random());
+  const winners = shuffled
+    .slice(0, Math.min(draw.winnersCount, shuffled.length))
+    .map((p) => ({ userId: p.userId }));
+
+  draw.winners = winners;
+  draw.isCompleted = true; // mark as completed
+  await draw.save();
+
+  return draw;
+}
+
+export default mongoose.models.LuckyDraw ||
+  mongoose.model("LuckyDraw", LuckyDrawSchema);

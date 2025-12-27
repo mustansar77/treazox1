@@ -84,10 +84,11 @@ const WithdrawPage = () => {
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 min-h-screen p-6">
+    <div className="bg-gray-100  dark:bg-gray-900 min-h-screen p-6">
       <Toaster position="top-right" />
 
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
+     <div className="max-w-[1170px] mx-auto">
+ <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-gray-900 dark:text-white">
         Withdraw Funds
       </h1>
 
@@ -200,6 +201,7 @@ const WithdrawPage = () => {
       >
         Confirm Withdraw
       </button>
+     </div>
     </div>
   );
 };
