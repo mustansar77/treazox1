@@ -38,24 +38,48 @@ export async function POST(req) {
 
     const { amount, exchange, network, address } = await req.json();
     if (!amount || !exchange || !network || !address) {
-      return NextResponse.json({ message: "All fields required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "All fields required" },
+        { status: 400 }
+      );
     }
+
+    const withdrawAmount = Number(amount);
+    if (withdrawAmount <= 0) {
+      return NextResponse.json(
+        { message: "Invalid withdraw amount" },
+        { status: 400 }
+      );
+    }
+
+    // 🔥 10% withdraw fee
+    const fee = Number(((withdrawAmount * 10) / 100).toFixed(2));
+    const netAmount = Number((withdrawAmount - fee).toFixed(2));
 
     const newWithdraw = await Withdraw.create({
       user: user.id,
-      amount,
+      amount: withdrawAmount,
+      fee,
+      netAmount,
       exchange,
       network,
       address,
       status: "pending",
     });
 
-    return NextResponse.json({ message: "Withdraw request submitted", withdraw: newWithdraw });
+    return NextResponse.json({
+      message: "Withdraw request submitted",
+      withdraw: newWithdraw,
+    });
   } catch (err) {
     console.error("POST /withdraws error:", err);
-    return NextResponse.json({ message: err.message || "Error creating withdraw" }, { status: 500 });
+    return NextResponse.json(
+      { message: err.message || "Error creating withdraw" },
+      { status: 500 }
+    );
   }
 }
+
 
 // ======================
 // GET all withdraws (admin)
@@ -67,12 +91,27 @@ export async function GET(req) {
 
     const withdraws = await Withdraw.find()
       .populate("user", "fullName email")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    return NextResponse.json({ withdraws });
+    const normalized = withdraws.map((w) => {
+      if (w.netAmount !== undefined) return w;
+
+      // backward compatibility (old data)
+      const fee = Number(((w.amount * 10) / 100).toFixed(2));
+      return {
+        ...w,
+        fee,
+        netAmount: Number((w.amount - fee).toFixed(2)),
+      };
+    });
+
+    return NextResponse.json({ withdraws: normalized });
   } catch (err) {
-    console.error("GET /withdraws error:", err);
-    return NextResponse.json({ message: err.message || "Error fetching withdraws" }, { status: 500 });
+    return NextResponse.json(
+      { message: err.message || "Error fetching withdraws" },
+      { status: 500 }
+    );
   }
 }
 

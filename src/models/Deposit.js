@@ -1,16 +1,33 @@
 import mongoose from "mongoose";
 
-const DepositSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  amount: { type: Number, required: true },
-  trxId: { type: String, required: true },
-  exchange: {
-    name: { type: String, required: true },
-    address: { type: String, required: true },
-    network: { type: String, required: true },
-  },
-  status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
-}, { timestamps: true });
+const DepositSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-const Deposit = mongoose.models.Deposit || mongoose.model("Deposit", DepositSchema);
+    amount: { type: Number, required: true }, // actual deposit amount (100)
+
+    fee: { type: Number, required: true }, // 5% fee (5)
+
+    totalAmount: { type: Number, required: true }, // amount + fee (105)
+
+    trxId: { type: String, required: true },
+
+    exchange: {
+      name: { type: String, required: true },
+      address: { type: String, required: true },
+      network: { type: String, required: true },
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+  },
+  { timestamps: true }
+);
+
+const Deposit =
+  mongoose.models.Deposit || mongoose.model("Deposit", DepositSchema);
+
 export default Deposit;

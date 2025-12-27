@@ -33,32 +33,49 @@ export async function POST(req) {
   try {
     await connectDB();
 
-    // Verify user token
     const user = await verifyToken(req, "user");
 
     const { amount, exchange, trxId } = await req.json();
     if (!amount || !exchange || !trxId) {
-      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
+      return NextResponse.json(
+        { message: "All fields are required" },
+        { status: 400 }
+      );
     }
 
-    const parsedExchange = typeof exchange === "string" ? JSON.parse(exchange) : exchange;
+    const parsedExchange =
+      typeof exchange === "string" ? JSON.parse(exchange) : exchange;
+
+    const fee = Number(((amount * 5) / 100).toFixed(2)); // 5% fee
+    const totalAmount = Number((amount + fee).toFixed(2));
 
     const newDeposit = await Deposit.create({
       user: user.id,
       amount,
+      fee,
+      totalAmount,
       exchange: parsedExchange,
       trxId,
       status: "pending",
     });
 
-    const populatedDeposit = await Deposit.findById(newDeposit._id).populate("user", "fullName email").lean();
+    const populatedDeposit = await Deposit.findById(newDeposit._id)
+      .populate("user", "fullName email")
+      .lean();
 
-    return NextResponse.json({ message: "Deposit submitted successfully", deposit: populatedDeposit });
+    return NextResponse.json({
+      message: "Deposit submitted successfully",
+      deposit: populatedDeposit,
+    });
   } catch (err) {
-    console.error("POST /deposits error:", err);
-    return NextResponse.json({ message: err.message || "Error creating deposit" }, { status: 500 });
+    console.error("POST /deposit error:", err);
+    return NextResponse.json(
+      { message: err.message || "Error creating deposit" },
+      { status: 500 }
+    );
   }
 }
+
 
 // ======================
 // GET: all deposits (admin only)
@@ -68,11 +85,27 @@ export async function GET(req) {
     await connectDB();
     await verifyToken(req, "admin");
 
-    const deposits = await Deposit.find().populate("user", "fullName email").lean();
-    return NextResponse.json({ deposits });
+    const deposits = await Deposit.find()
+      .populate("user", "fullName email")
+      .lean();
+
+    const normalized = deposits.map((d) => {
+      if (d.totalAmount && d.fee !== undefined) return d;
+
+      const fee = Number(((d.amount * 5) / 100).toFixed(2));
+      return {
+        ...d,
+        fee,
+        totalAmount: Number((d.amount + fee).toFixed(2)),
+      };
+    });
+
+    return NextResponse.json({ deposits: normalized });
   } catch (err) {
-    console.error("GET /deposits error:", err.message);
-    return NextResponse.json({ message: err.message || "Error fetching deposits" }, { status: 500 });
+    return NextResponse.json(
+      { message: err.message || "Error fetching deposits" },
+      { status: 500 }
+    );
   }
 }
 

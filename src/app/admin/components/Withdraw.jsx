@@ -2,22 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { Toaster, toast } from "react-hot-toast";
-import Cookies from "js-cookie"; // to read token from cookies
+import Cookies from "js-cookie";
 
 const Withdraw = () => {
   const [withdraws, setWithdraws] = useState([]);
   const [searchEmail, setSearchEmail] = useState("");
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("pending"); // pending | processing | completed
 
   const fetchWithdraws = async () => {
     try {
-      const token = Cookies.get("token"); // read token from cookies
+      const token = Cookies.get("token");
       if (!token) throw new Error("Unauthorized: Please login first");
 
       const res = await fetch("/api/withdraws", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const data = await res.json();
@@ -25,7 +24,7 @@ const Withdraw = () => {
 
       setWithdraws(data.withdraws);
     } catch (err) {
-      console.error("Fetch withdraws error:", err);
+      console.error(err);
       toast.error(err.message || "Failed to fetch withdraws");
     } finally {
       setLoading(false);
@@ -55,7 +54,7 @@ const Withdraw = () => {
 
       toast.success(`Withdraw marked as ${newStatus}`);
     } catch (err) {
-      console.error("Update status error:", err);
+      console.error(err);
       toast.error(err.message || "Failed to update status");
     }
   };
@@ -64,13 +63,16 @@ const Withdraw = () => {
     fetchWithdraws();
   }, []);
 
-  const filteredWithdraws = withdraws.filter((w) =>
-    w.user?.email.toLowerCase().includes(searchEmail.toLowerCase())
+  const filteredWithdraws = withdraws.filter(
+    (w) =>
+      w.status === activeTab &&
+      w.user?.email.toLowerCase().includes(searchEmail.toLowerCase())
   );
 
   return (
-    <div className="sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div className="p-4 sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
+
       <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
         Withdraw Requests
       </h1>
@@ -86,60 +88,86 @@ const Withdraw = () => {
         />
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {["pending", "processing", "completed"].map((status) => (
+          <button
+            key={status}
+            onClick={() => setActiveTab(status)}
+            className={`px-4 py-2 rounded-lg font-semibold transition ${
+              activeTab === status
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white"
+            }`}
+          >
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </button>
+        ))}
+      </div>
+
       {/* Table */}
       <div className="overflow-x-auto rounded-lg shadow-lg bg-white dark:bg-gray-800">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <table className="min-w-[1100px] w-full divide-y divide-gray-200 dark:divide-gray-700">
           <thead className="bg-gray-50 dark:bg-gray-700">
-            <tr>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">#</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">User Email</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Exchange</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Network Type</th>
-
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Withdraw Address</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Amount</th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Status</th>
-              <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Action</th>
+            <tr className="text-primary dark:text-white">
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">#</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">User Email</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">Exchange</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">Network</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">Address</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">Amount</th>
+              <th className="px-4 py-2 text-left text-xs font-medium uppercase">Status</th>
+              <th className="px-4 py-2 text-center text-xs font-medium uppercase">Action</th>
             </tr>
           </thead>
 
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {loading ? (
               <tr>
-                <td colSpan={6} className="text-center py-4 text-gray-500 dark:text-gray-300">
+                <td colSpan={8} className="text-center py-6 text-gray-500">
                   Loading withdraws...
                 </td>
               </tr>
             ) : filteredWithdraws.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-4 text-gray-500 dark:text-gray-300">
-                  No withdraw requests found
+                <td colSpan={8} className="text-center py-6 text-gray-500">
+                  No withdraws in this tab
                 </td>
               </tr>
             ) : (
               filteredWithdraws.map((item, index) => (
-                <tr key={item._id}>
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">{index + 1}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">{item.user?.email}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.exchange}</td>
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.network}</td>
-
-                  <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 break-all">{item.address}</td>
-                  <td className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-100">${item.amount}</td>
+                <tr key={item._id} className="text-primary dark:text-white">
+                  <td className="px-4 py-2 text-sm">{index + 1}</td>
+                  <td className="px-4 py-2 text-sm">{item.user?.email}</td>
+                  <td className="px-4 py-2 text-sm">{item.exchange}</td>
+                  <td className="px-4 py-2 text-sm">{item.network}</td>
+                  <td className="px-4 py-2 text-sm max-w-[220px] truncate font-mono">
+                    {item.address}
+                  </td>
+                  <td className="px-4 py-2 text-sm font-semibold">
+                    ${item.netAmount}
+                  </td>
                   <td className="px-4 py-2 text-sm">
-                    <span className={`px-3 py-1 rounded-[5px] text-xs font-medium ${
-                      item.status === "completed" ? "bg-green-800 text-white" :
-                      item.status === "processing" ? "bg-yellow-400 text-black" :
-                      "bg-gray-400 text-white"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded text-xs font-medium ${
+                        item.status === "completed"
+                          ? "bg-green-800 text-white"
+                          : item.status === "processing"
+                          ? "bg-yellow-400 text-black"
+                          : "bg-gray-400 text-white"
+                      }`}
+                    >
                       {item.status}
                     </span>
                   </td>
                   <td className="px-4 py-2 text-center">
                     <select
                       value={item.status}
-                      onChange={(e) => handleStatusChange(item._id, e.target.value)}
-                      className="px-3 py-1 border rounded-md bg-white dark:bg-gray-700 dark:text-white focus:outline-none"
+                      onChange={(e) =>
+                        handleStatusChange(item._id, e.target.value)
+                      }
+                      className="px-3 py-1 border rounded-md bg-white dark:bg-gray-700 dark:text-white"
+                      disabled={item.status === "completed"}
                     >
                       <option value="pending">Pending</option>
                       <option value="processing">Processing</option>

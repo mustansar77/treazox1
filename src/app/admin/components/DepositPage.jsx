@@ -124,7 +124,7 @@ const DepositPage = () => {
             <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200">
               {item.exchange?.name} - {item.exchange?.network}
             </td>
-            <td className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-100">${item.amount}</td>
+            <td className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-100">${item.totalAmount}</td>
             <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 font-mono">{item.exchange?.address}</td>
             <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-200 max-w-[200px] truncate">{item.trxId}</td>
             <td className="px-4 py-2 text-sm">
