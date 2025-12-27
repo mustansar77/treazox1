@@ -64,9 +64,9 @@ const DepositPage = () => {
   const filteredDeposits = deposits.filter((d) => d.status === activeTab);
 
   return (
-    <div className="p-4 sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <div className=" sm:p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <Toaster position="top-right" />
-      <h1 className="text-3xl font-bold mb-4 text-gray-900 dark:text-white">
+      <h1 className="text-sm sm:text-3xl font-bold mb-4 text-gray-900 dark:text-white">
         Admin Deposit Management
       </h1>
 
