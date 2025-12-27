@@ -11,8 +11,10 @@ const adminNavItems = [
   { name: "Plans", href: "/admin/plans" },
   { name: "Users", href: "/admin/users" },
   { name: "Investments", href: "/admin/investments" },
-  { name: "Lucky Draw", href: "/admin/luckydraw" },
+  { name: "Draw", href: "/admin/luckydraw" },
   { name: "Withdraw", href: "/admin/withdraw" },
+  { name: "Deposit", href: "/admin/deposit" },
+
 
 ];
 
