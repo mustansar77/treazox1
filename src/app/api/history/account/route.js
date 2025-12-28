@@ -2,6 +2,7 @@ import connectDB from "../../../../lib/db";
 import Deposit from "../../../../models/Deposit";
 import Withdraw from "../../../../models/Withdraw";
 import Investment from "../../../../models/Investment";
+import Plan from "../../../../models/Plan"; // ✅ Import Plan model
 import jwt from "jsonwebtoken";
 import { NextResponse } from "next/server";
 
@@ -28,7 +29,7 @@ export async function GET(req) {
       .lean();
 
     const investments = await Investment.find({ user: userId })
-      .populate("plan")
+      .populate("plan") // ✅ Plan is now imported, populate will work
       .sort({ createdAt: -1 })
       .lean();
 
